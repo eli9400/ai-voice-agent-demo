@@ -1,4 +1,5 @@
 from pathlib import Path
+from uuid import uuid4
 
 from openai import OpenAI
 
@@ -8,6 +9,8 @@ VOICE_AGENT_SYSTEM_PROMPT = (
     "You are a helpful AI voice customer support agent. Answer clearly, briefly, "
     "and politely. If the user request is unclear, ask one focused follow-up question."
 )
+TTS_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "storage" / "tts_outputs"
+TTS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _create_openai_client() -> OpenAI:
@@ -64,3 +67,26 @@ def generate_assistant_response(transcript: str) -> str:
         raise RuntimeError("Assistant response was empty.")
 
     return assistant_message.strip()
+
+
+def generate_speech_audio(text: str) -> str:
+    tts_input = text.strip()
+    if not tts_input:
+        raise ValueError("Assistant response is empty and cannot be converted to speech.")
+
+    output_filename = f"{uuid4()}.mp3"
+    output_path = (TTS_OUTPUT_DIR / output_filename).resolve()
+    client = _create_openai_client()
+
+    try:
+        speech_response = client.audio.speech.create(
+            model=app_settings.tts_model,
+            voice=app_settings.tts_voice,
+            input=tts_input,
+            response_format="mp3",
+        )
+        speech_response.write_to_file(output_path)
+    except Exception as exc:
+        raise RuntimeError("OpenAI TTS generation failed.") from exc
+
+    return str(output_path)

@@ -21,7 +21,8 @@ function toAudioJobResult(value: unknown): AudioJobResult | null {
     typeof record.original_filename !== 'string' ||
     typeof record.stored_file_path !== 'string' ||
     typeof record.transcript !== 'string' ||
-    typeof record.assistant_response !== 'string'
+    typeof record.assistant_response !== 'string' ||
+    typeof record.assistant_audio_url !== 'string'
   ) {
     return null
   }
@@ -31,6 +32,7 @@ function toAudioJobResult(value: unknown): AudioJobResult | null {
     stored_file_path: record.stored_file_path,
     transcript: record.transcript,
     assistant_response: record.assistant_response,
+    assistant_audio_url: record.assistant_audio_url,
   }
 }
 

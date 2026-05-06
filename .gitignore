@@ -28,3 +28,7 @@ coverage/
 # Backend audio uploads
 backend/storage/audio_uploads/*
 !backend/storage/audio_uploads/.gitkeep
+
+# Backend TTS outputs
+backend/storage/tts_outputs/*
+!backend/storage/tts_outputs/.gitkeep

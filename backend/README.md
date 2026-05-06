@@ -43,6 +43,7 @@ celery -A app.celery_app.celery_app worker --loglevel=info --pool=solo
 - `POST /api/jobs`
 - `POST /api/jobs/audio`
 - `GET /api/jobs/{job_id}`
+- `GET /api/audio/{filename}`
 
 ## Quick curl Examples
 
@@ -84,7 +85,7 @@ curl -X POST "http://localhost:8000/api/jobs/audio" -F "file=@C:\path\to\audio.w
 
 Audio pipeline:
 
-`upload -> Whisper transcription (whisper-1) -> GPT response (gpt-4o-mini)`
+`upload -> Whisper transcription (whisper-1) -> GPT response (gpt-4o-mini) -> TTS (gpt-4o-mini-tts)`
 
 Get job status:
 
@@ -102,7 +103,8 @@ Example done result:
     "original_filename": "audio.wav",
     "stored_file_path": "C:\\...\\backend\\storage\\audio_uploads\\d43f9fcb-5d44-47a5-b77f-8b94b6f2de21.wav",
     "transcript": "I need help with my order status.",
-    "assistant_response": "Sure, I can help. Please share your order number so I can check the status."
+    "assistant_response": "Sure, I can help. Please share your order number so I can check the status.",
+    "assistant_audio_url": "/api/audio/8f7f0ad8-9e57-49da-99f2-cd08a8b72f93.mp3"
   }
 }
 ```

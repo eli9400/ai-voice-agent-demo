@@ -20,8 +20,9 @@ Open:
 
 ## What This UI Does
 
-- Select an audio file.
-- Upload it to:
+- Ask for microphone permission in the browser.
+- Record voice audio from the microphone.
+- Upload recorded audio to:
   `POST http://localhost:8000/api/jobs/audio`
 - Receive `job_id`.
 - Poll every 2 seconds:
@@ -30,6 +31,7 @@ Open:
 - Display:
   - transcript
   - assistant response
+  - automatic TTS playback from `assistant_audio_url`
   - errors (if any)
 
 ## How To Test
@@ -37,6 +39,7 @@ Open:
 1. Start backend + Redis + Celery worker (`--pool=solo`) from the backend project.
 2. Run this frontend with `npm run dev`.
 3. Open `http://localhost:5173`.
-4. Choose an audio file (`.mp3`, `.wav`, `.m4a`, `.webm`, `.ogg`).
-5. Click **Upload Audio**.
-6. Wait for status to reach `done`, then verify transcript and assistant response are shown.
+4. Allow microphone access when the browser asks.
+5. Click **Start Recording**, speak, then click **Stop Recording**.
+6. Wait for status to reach `done`.
+7. Verify transcript and assistant response are shown and AI audio plays automatically.

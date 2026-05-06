@@ -11,6 +11,7 @@ export type AudioJobResult = {
   stored_file_path: string
   transcript: string
   assistant_response: string
+  assistant_audio_url: string
 }
 
 export type JobStatusResponse = {
