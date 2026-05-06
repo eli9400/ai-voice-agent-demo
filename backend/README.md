@@ -82,10 +82,29 @@ Upload audio job (CMD example):
 curl -X POST "http://localhost:8000/api/jobs/audio" -F "file=@C:\path\to\audio.wav"
 ```
 
+Audio pipeline:
+
+`upload -> Whisper transcription (whisper-1) -> GPT response (gpt-4o-mini)`
+
 Get job status:
 
 ```bash
 curl http://localhost:8000/api/jobs/<JOB_ID>
+```
+
+Example done result:
+
+```json
+{
+  "job_id": "d43f9fcb-5d44-47a5-b77f-8b94b6f2de21",
+  "status": "done",
+  "result": {
+    "original_filename": "audio.wav",
+    "stored_file_path": "C:\\...\\backend\\storage\\audio_uploads\\d43f9fcb-5d44-47a5-b77f-8b94b6f2de21.wav",
+    "transcript": "I need help with my order status.",
+    "assistant_response": "Sure, I can help. Please share your order number so I can check the status."
+  }
+}
 ```
 
 ## Notes
@@ -102,4 +121,4 @@ curl http://localhost:8000/api/jobs/<JOB_ID>
 1. Upload audio with `POST /api/jobs/audio`.
 2. Copy the returned `job_id`.
 3. Poll `GET /api/jobs/{job_id}` until `status` is `done`.
-4. Confirm `result.transcript` contains the real transcription text.
+4. Confirm `result.transcript` and `result.assistant_response` are both returned.
