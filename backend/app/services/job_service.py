@@ -1,11 +1,19 @@
 from typing import Any
 
 from app.celery_app import celery_app
-from app.workers.tasks import process_mock_ai_message
+from app.workers.tasks import (
+    process_mock_ai_message,
+    process_mock_audio_transcription,
+)
 
 
 def create_job(content: str) -> str:
     task = process_mock_ai_message.delay(content)
+    return task.id
+
+
+def create_audio_job(file_path: str, original_filename: str) -> str:
+    task = process_mock_audio_transcription.delay(file_path, original_filename)
     return task.id
 
 

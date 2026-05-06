@@ -24,3 +24,7 @@ logs/
 
 # Coverage
 coverage/
+
+# Backend audio uploads
+backend/storage/audio_uploads/*
+!backend/storage/audio_uploads/.gitkeep

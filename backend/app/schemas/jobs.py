@@ -12,6 +12,12 @@ class CreateJobResponse(BaseModel):
     status: str
 
 
+class AudioJobResponse(BaseModel):
+    job_id: str
+    status: str
+    filename: str
+
+
 class JobStatusResponse(BaseModel):
     job_id: str
     status: str

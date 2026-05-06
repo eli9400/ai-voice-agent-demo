@@ -23,7 +23,7 @@ uvicorn app.main:app --reload --port 8000
 ## Run Worker
 
 ```bash
-celery -A app.celery_app.celery_app worker --loglevel=info
+celery -A app.celery_app.celery_app worker --loglevel=info --pool=solo
 ```
 
 ## Endpoints
@@ -33,6 +33,7 @@ celery -A app.celery_app.celery_app worker --loglevel=info
 - `POST /api/sessions/{session_id}/messages`
 - `GET /api/sessions/{session_id}`
 - `POST /api/jobs`
+- `POST /api/jobs/audio`
 - `GET /api/jobs/{job_id}`
 
 ## Quick curl Examples
@@ -67,6 +68,12 @@ Create job:
 curl -X POST http://localhost:8000/api/jobs -H "Content-Type: application/json" -d "{\"content\":\"hello\"}"
 ```
 
+Upload audio job (CMD example):
+
+```bash
+curl -X POST "http://localhost:8000/api/jobs/audio" -F "file=@C:\path\to\audio.wav"
+```
+
 Get job status:
 
 ```bash
@@ -79,3 +86,4 @@ curl http://localhost:8000/api/jobs/<JOB_ID>
 - Restarting the backend clears all sessions.
 - Jobs are processed asynchronously by Celery.
 - Redis is used as both broker and result backend.
+- Audio transcription is currently mock only (no real speech-to-text yet).
