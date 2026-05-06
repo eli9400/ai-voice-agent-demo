@@ -1,11 +1,13 @@
 # Placeholder Docker Compose file for future services.
-# No runtime services are configured yet.
-#
-# Planned services:
-# - backend   (FastAPI)
-# - frontend  (React + Vite)
-# - postgres  (database)
-# - redis     (cache / broker)
-# - worker    (background jobs)
+# For now, only Redis is enabled for Celery broker/result backend.
+# Planned services to add later:
+# - backend
+# - frontend
+# - postgres
+# - worker
 
-services: {}
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"

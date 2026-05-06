@@ -8,10 +8,22 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Run
+## Run Redis
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+docker compose up -d redis
+```
+
+## Run Backend
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+## Run Worker
+
+```bash
+celery -A app.celery_app.celery_app worker --loglevel=info
 ```
 
 ## Endpoints
@@ -20,6 +32,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `POST /api/sessions`
 - `POST /api/sessions/{session_id}/messages`
 - `GET /api/sessions/{session_id}`
+- `POST /api/jobs`
+- `GET /api/jobs/{job_id}`
 
 ## Quick curl Examples
 
@@ -47,7 +61,21 @@ Get session:
 curl http://localhost:8000/api/sessions/<SESSION_ID>
 ```
 
+Create job:
+
+```bash
+curl -X POST http://localhost:8000/api/jobs -H "Content-Type: application/json" -d "{\"content\":\"hello\"}"
+```
+
+Get job status:
+
+```bash
+curl http://localhost:8000/api/jobs/<JOB_ID>
+```
+
 ## Notes
 
 - Session storage is in-memory only (Python dictionary).
 - Restarting the backend clears all sessions.
+- Jobs are processed asynchronously by Celery.
+- Redis is used as both broker and result backend.
