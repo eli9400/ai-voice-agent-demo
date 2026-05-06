@@ -1,0 +1,11 @@
+# Placeholder Docker Compose file for future services.
+# No runtime services are configured yet.
+#
+# Planned services:
+# - backend   (FastAPI)
+# - frontend  (React + Vite)
+# - postgres  (database)
+# - redis     (cache / broker)
+# - worker    (background jobs)
+
+services: {}
