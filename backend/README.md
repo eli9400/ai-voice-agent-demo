@@ -8,6 +8,14 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+## Environment Variables
+
+Create `backend/.env` and set:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
 ## Run Redis
 
 ```bash
@@ -86,4 +94,12 @@ curl http://localhost:8000/api/jobs/<JOB_ID>
 - Restarting the backend clears all sessions.
 - Jobs are processed asynchronously by Celery.
 - Redis is used as both broker and result backend.
-- Audio transcription is currently mock only (no real speech-to-text yet).
+- Audio transcription uses OpenAI Whisper (`whisper-1`).
+- Do not commit real API keys to source control.
+
+## Real Transcription Check
+
+1. Upload audio with `POST /api/jobs/audio`.
+2. Copy the returned `job_id`.
+3. Poll `GET /api/jobs/{job_id}` until `status` is `done`.
+4. Confirm `result.transcript` contains the real transcription text.
