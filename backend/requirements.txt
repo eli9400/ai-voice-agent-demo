@@ -4,3 +4,5 @@ celery
 redis
 python-multipart
 openai>=1.0.0
+ivrit>=0.2.6
+faster-whisper>=1.1.1

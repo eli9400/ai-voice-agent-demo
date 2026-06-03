@@ -10,6 +10,10 @@ export type AudioJobResult = {
   original_filename: string
   stored_file_path: string
   transcript: string
+  transcription_provider?: string
+  transcription_engine?: string
+  transcription_model?: string
+  transcription_language?: string
   assistant_response: string
   assistant_audio_url: string
 }

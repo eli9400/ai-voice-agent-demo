@@ -14,6 +14,11 @@ Create `backend/.env` and set:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
+TRANSCRIPTION_PROVIDER=ivrit
+TRANSCRIPTION_LANGUAGE=he
+IVRIT_MODEL=ivrit-ai/whisper-large-v3-turbo-ct2
+IVRIT_DEVICE=cpu
+# Optional: set IVRIT_DEVICE=cuda and IVRIT_COMPUTE_TYPE=float16 on a CUDA machine.
 ```
 
 ## Run Redis
@@ -85,7 +90,7 @@ curl -X POST "http://localhost:8000/api/jobs/audio" -F "file=@C:\path\to\audio.w
 
 Audio pipeline:
 
-`upload -> Whisper transcription (whisper-1) -> GPT response (gpt-4o-mini) -> TTS (gpt-4o-mini-tts)`
+`upload -> Ivrit AI transcription -> GPT response (gpt-4o-mini) -> TTS (gpt-4o-mini-tts)`
 
 Get job status:
 
@@ -115,7 +120,9 @@ Example done result:
 - Restarting the backend clears all sessions.
 - Jobs are processed asynchronously by Celery.
 - Redis is used as both broker and result backend.
-- Audio transcription uses OpenAI Whisper (`whisper-1`).
+- Audio transcription uses Ivrit AI (`ivrit-ai/whisper-large-v3-turbo-ct2`) by default.
+- Set `TRANSCRIPTION_PROVIDER=openai` to use OpenAI Whisper (`whisper-1`) as a fallback.
+- The first Ivrit AI transcription downloads and loads the model, so it can be slow.
 - Do not commit real API keys to source control.
 
 ## Real Transcription Check

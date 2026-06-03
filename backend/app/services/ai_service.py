@@ -1,4 +1,6 @@
 from pathlib import Path
+from threading import Lock
+from typing import Any
 from uuid import uuid4
 
 from openai import OpenAI
@@ -20,21 +22,149 @@ VOICE_AGENT_SYSTEM_PROMPT = (
 )
 TTS_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "storage" / "tts_outputs"
 TTS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+_IVRIT_MODEL: Any | None = None
+_IVRIT_MODEL_LOCK = Lock()
 
 
 def _create_openai_client() -> OpenAI:
     if not app_settings.openai_api_key.strip():
         raise RuntimeError(
-            "OPENAI_API_KEY is not configured. Set it in backend/.env before running audio jobs."
+            "OPENAI_API_KEY is not configured. Set it in backend/.env before generating AI responses."
         )
     return OpenAI(api_key=app_settings.openai_api_key)
 
 
-def transcribe_audio(file_path: str) -> str:
-    audio_path = Path(file_path)
-    if not audio_path.is_file():
-        raise FileNotFoundError(f"Audio file not found: {audio_path}")
+def _normalized_transcription_provider() -> str:
+    provider = app_settings.transcription_provider.strip().lower().replace("_", "-")
+    if provider == "ivrit-ai":
+        return "ivrit"
+    return provider
 
+
+def _load_ivrit_model() -> Any:
+    global _IVRIT_MODEL
+
+    if _IVRIT_MODEL is not None:
+        return _IVRIT_MODEL
+
+    with _IVRIT_MODEL_LOCK:
+        if _IVRIT_MODEL is not None:
+            return _IVRIT_MODEL
+
+        try:
+            import ivrit
+        except ImportError as exc:
+            raise RuntimeError(
+                "Ivrit AI transcription dependencies are missing. "
+                "Run `pip install -r backend/requirements.txt`."
+            ) from exc
+
+        model_kwargs = {
+            "engine": app_settings.ivrit_engine,
+            "model": app_settings.ivrit_model,
+        }
+        if app_settings.ivrit_device.strip():
+            model_kwargs["device"] = app_settings.ivrit_device.strip()
+        if app_settings.ivrit_compute_type.strip():
+            model_kwargs["compute_type"] = app_settings.ivrit_compute_type.strip()
+
+        try:
+            _IVRIT_MODEL = ivrit.load_model(**model_kwargs)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to load Ivrit AI transcription model '{app_settings.ivrit_model}'."
+            ) from exc
+
+        return _IVRIT_MODEL
+
+
+def _load_faster_whisper_model() -> Any:
+    global _IVRIT_MODEL
+
+    if _IVRIT_MODEL is not None:
+        return _IVRIT_MODEL
+
+    with _IVRIT_MODEL_LOCK:
+        if _IVRIT_MODEL is not None:
+            return _IVRIT_MODEL
+
+        try:
+            from faster_whisper import WhisperModel
+        except ImportError as exc:
+            raise RuntimeError(
+                "Faster Whisper dependencies are missing. "
+                "Run `pip install -r backend/requirements.txt`."
+            ) from exc
+
+        model_kwargs = {}
+        if app_settings.ivrit_device.strip():
+            model_kwargs["device"] = app_settings.ivrit_device.strip()
+        if app_settings.ivrit_compute_type.strip():
+            model_kwargs["compute_type"] = app_settings.ivrit_compute_type.strip()
+
+        try:
+            _IVRIT_MODEL = WhisperModel(app_settings.ivrit_model, **model_kwargs)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to load Ivrit AI Faster Whisper model '{app_settings.ivrit_model}'."
+            ) from exc
+
+        return _IVRIT_MODEL
+
+
+def _extract_transcript_text(transcription: Any, provider_name: str) -> str:
+    if isinstance(transcription, dict):
+        transcript_text = transcription.get("text")
+    else:
+        transcript_text = getattr(transcription, "text", None)
+
+    if not transcript_text or not transcript_text.strip():
+        raise RuntimeError(f"{provider_name} transcription response did not include transcript text.")
+
+    return transcript_text.strip()
+
+
+def _transcribe_audio_with_ivrit(audio_path: Path) -> str:
+    if app_settings.ivrit_engine.strip().lower() == "faster-whisper":
+        return _transcribe_audio_with_faster_whisper(audio_path)
+
+    model = _load_ivrit_model()
+
+    try:
+        transcription = model.transcribe(
+            path=str(audio_path),
+            language=app_settings.transcription_language.strip() or None,
+            output_options={"word_timestamps": False, "extra_data": False},
+        )
+    except Exception as exc:
+        raise RuntimeError(f"Ivrit AI transcription failed for file '{audio_path.name}'.") from exc
+
+    return _extract_transcript_text(transcription, "Ivrit AI")
+
+
+def _transcribe_audio_with_faster_whisper(audio_path: Path) -> str:
+    model = _load_faster_whisper_model()
+    initial_prompt = app_settings.ivrit_initial_prompt.strip() or None
+
+    try:
+        segments, _ = model.transcribe(
+            str(audio_path),
+            language=app_settings.transcription_language.strip() or "he",
+            task="transcribe",
+            initial_prompt=initial_prompt,
+            word_timestamps=False,
+            condition_on_previous_text=False,
+        )
+        transcript_text = " ".join(segment.text.strip() for segment in segments if segment.text.strip())
+    except Exception as exc:
+        raise RuntimeError(
+            f"Ivrit AI Faster Whisper transcription failed for file '{audio_path.name}'."
+        ) from exc
+
+    return _extract_transcript_text({"text": transcript_text}, "Ivrit AI")
+
+
+def _transcribe_audio_with_openai(audio_path: Path) -> str:
     client = _create_openai_client()
 
     try:
@@ -46,11 +176,48 @@ def transcribe_audio(file_path: str) -> str:
     except Exception as exc:
         raise RuntimeError(f"OpenAI transcription failed for file '{audio_path.name}'.") from exc
 
-    transcript_text = getattr(transcription, "text", None)
-    if not transcript_text or not transcript_text.strip():
-        raise RuntimeError("OpenAI transcription response did not include transcript text.")
+    return _extract_transcript_text(transcription, "OpenAI")
 
-    return transcript_text.strip()
+
+def transcribe_audio(file_path: str) -> str:
+    audio_path = Path(file_path)
+    if not audio_path.is_file():
+        raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+    provider = _normalized_transcription_provider()
+    if provider == "ivrit":
+        return _transcribe_audio_with_ivrit(audio_path)
+    if provider == "openai":
+        return _transcribe_audio_with_openai(audio_path)
+
+    raise RuntimeError(
+        f"Unsupported TRANSCRIPTION_PROVIDER '{app_settings.transcription_provider}'. "
+        "Use 'ivrit' or 'openai'."
+    )
+
+
+def get_transcription_metadata() -> dict[str, str]:
+    provider = _normalized_transcription_provider()
+    if provider == "ivrit":
+        return {
+            "transcription_provider": "ivrit",
+            "transcription_engine": app_settings.ivrit_engine,
+            "transcription_model": app_settings.ivrit_model,
+            "transcription_language": app_settings.transcription_language,
+        }
+    if provider == "openai":
+        return {
+            "transcription_provider": "openai",
+            "transcription_engine": "openai",
+            "transcription_model": app_settings.whisper_model,
+            "transcription_language": app_settings.transcription_language,
+        }
+    return {
+        "transcription_provider": provider,
+        "transcription_engine": "",
+        "transcription_model": "",
+        "transcription_language": app_settings.transcription_language,
+    }
 
 
 def generate_assistant_response(transcript: str) -> str:

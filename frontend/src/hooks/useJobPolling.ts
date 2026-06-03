@@ -31,6 +31,14 @@ function toAudioJobResult(value: unknown): AudioJobResult | null {
     original_filename: record.original_filename,
     stored_file_path: record.stored_file_path,
     transcript: record.transcript,
+    transcription_provider:
+      typeof record.transcription_provider === 'string' ? record.transcription_provider : undefined,
+    transcription_engine:
+      typeof record.transcription_engine === 'string' ? record.transcription_engine : undefined,
+    transcription_model:
+      typeof record.transcription_model === 'string' ? record.transcription_model : undefined,
+    transcription_language:
+      typeof record.transcription_language === 'string' ? record.transcription_language : undefined,
     assistant_response: record.assistant_response,
     assistant_audio_url: record.assistant_audio_url,
   }

@@ -5,6 +5,7 @@ from app.celery_app import celery_app
 from app.services.ai_service import (
     generate_assistant_response,
     generate_speech_audio,
+    get_transcription_metadata,
     transcribe_audio,
 )
 
@@ -50,6 +51,7 @@ def process_mock_audio_transcription(
         "original_filename": original_filename,
         "stored_file_path": str(audio_path),
         "transcript": transcript_text,
+        **get_transcription_metadata(),
         "assistant_response": assistant_response,
         "assistant_audio_url": f"/api/audio/{assistant_audio_filename}",
     }

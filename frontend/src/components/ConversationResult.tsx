@@ -41,6 +41,12 @@ function ConversationResult({
 
       <section className="panel">
         <h2>Transcript</h2>
+        {result?.transcription_provider ? (
+          <p className="meta">
+            Source: {result.transcription_provider}
+            {result.transcription_model ? ` / ${result.transcription_model}` : ''}
+          </p>
+        ) : null}
         <p>{result?.transcript ?? 'Transcript will appear here.'}</p>
       </section>
 

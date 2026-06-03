@@ -9,7 +9,7 @@ Browser Mic Recording
     -> FastAPI Upload Endpoint
     -> Redis Queue
     -> Celery Worker (--pool=solo)
-    -> OpenAI Whisper (transcript)
+    -> Ivrit AI Whisper (transcript)
     -> OpenAI GPT (assistant response)
     -> OpenAI TTS (assistant audio)
     -> Frontend Polling + Auto Playback
@@ -19,7 +19,7 @@ Browser Mic Recording
 
 - Browser microphone recording via MediaRecorder
 - Async background job processing with Redis + Celery
-- Whisper transcription (`whisper-1`)
+- Ivrit AI transcription (`ivrit-ai/whisper-large-v3-turbo-ct2`)
 - GPT text response generation (`gpt-4o-mini`)
 - TTS audio generation (`gpt-4o-mini-tts`, `alloy`)
 - Polling-based job status updates (no WebSocket yet)
@@ -28,7 +28,7 @@ Browser Mic Recording
 ## Tech Stack
 
 - Frontend: React, TypeScript, Vite
-- Backend: FastAPI, Celery, Redis, OpenAI Python SDK
+- Backend: FastAPI, Celery, Redis, OpenAI Python SDK, Ivrit AI Python package
 - Infra: Docker Compose (Redis service)
 
 ## Prerequisites
@@ -36,7 +36,8 @@ Browser Mic Recording
 - Node.js
 - Python 3.11+
 - Docker Desktop
-- OpenAI API key
+- OpenAI API key for assistant response + TTS
+- Enough local disk/RAM for the Ivrit AI model download on first transcription
 
 ## Environment Variables
 
@@ -44,6 +45,11 @@ Create `backend/.env`:
 
 ```env
 OPENAI_API_KEY=your_api_key_here
+TRANSCRIPTION_PROVIDER=ivrit
+TRANSCRIPTION_LANGUAGE=he
+IVRIT_MODEL=ivrit-ai/whisper-large-v3-turbo-ct2
+IVRIT_DEVICE=cpu
+# Optional: set IVRIT_DEVICE=cuda and IVRIT_COMPUTE_TYPE=float16 on a CUDA machine.
 ```
 
 Never commit `.env` files.
@@ -136,7 +142,8 @@ curl "http://localhost:8000/api/audio/GENERATED_FILENAME.mp3" --output ai-respon
 - Redis not running: `docker compose up -d redis`.
 - Celery issues on Windows: run worker with `--pool=solo`.
 - Microphone blocked in browser: allow mic permissions for `localhost`.
-- Missing `OPENAI_API_KEY`: create and fill `backend/.env`.
+- Missing `OPENAI_API_KEY`: create and fill `backend/.env`; it is still used for GPT + TTS.
+- Slow first transcription: Ivrit AI downloads and loads the model the first time the worker transcribes.
 - `uvicorn` not recognized: activate `.venv` and install requirements.
 
 ## Current Scope
